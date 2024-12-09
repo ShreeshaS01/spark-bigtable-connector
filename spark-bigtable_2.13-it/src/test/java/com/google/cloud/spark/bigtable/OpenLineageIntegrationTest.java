@@ -38,6 +38,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
         BigtableTableAdminSettings.newBuilder()
             .setProjectId(projectId)
             .setInstanceId(instanceId)
+            .setCredentialsProvider(NoCredentialsProvider.create())
             .build();
     adminClient = BigtableTableAdminClient.create(adminSettings);
   }
@@ -88,6 +89,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       // event data.
       Dataset<Row> outputReadDf = readDataframeFromBigtable(spark, outputCatalog);
       assertDataFramesEqual(outputReadDf, outputDf);
+      Thread.sleep(2 * 60 * 1000);
       List<JsonObject> jsonObjects = parseEventLog(lineageFile);
       assertThat(jsonObjects.isEmpty(), is(false));
 
@@ -113,6 +115,8 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
   private static SparkSession createSparkSessionWithOL() throws IOException {
     lineageFile = File.createTempFile("openlineage_test_" + System.nanoTime(), ".log");
     lineageFile.deleteOnExit();
+
+    System.out.println(lineageFile.getAbsolutePath());
     spark =
         SparkSession.builder()
             .master("local")
@@ -133,6 +137,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       eventList = new ArrayList<>();
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
+        System.out.println(line);
         JsonObject event = JsonParser.parseString(line).getAsJsonObject();
         if (!event.getAsJsonArray("inputs").isEmpty()
             && !event.getAsJsonArray("outputs").isEmpty()) {

@@ -4,6 +4,8 @@ import io.openlineage.spark.extension.OpenLineageExtensionProvider
 
 class SparkBigtableLineageProvider extends OpenLineageExtensionProvider {
 
-  def shadedPackage(): String =
-    "com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade"
+  def shadedPackage(): String = {
+    //"com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade"
+    "io.openlineage.spark.shade"
+  }
 }

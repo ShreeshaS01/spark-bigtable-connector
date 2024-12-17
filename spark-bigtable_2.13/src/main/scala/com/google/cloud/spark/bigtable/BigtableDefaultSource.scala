@@ -96,11 +96,11 @@ class BigtableDefaultSource
     val catalog = BigtableTableCatalog(params)
     val projectId = params.getOrElse(
       BigtableSparkConf.BIGTABLE_PROJECT_ID,
-      "unknownProjectId"
+      "my-local-project"
     )
     val instanceId = params.getOrElse(
       BigtableSparkConf.BIGTABLE_INSTANCE_ID,
-      "unknownInstanceId"
+      "my-local-instance"
     )
     new DatasetIdentifier(catalog.name, s"bigtable://$projectId/$instanceId")
   }
@@ -224,11 +224,11 @@ case class BigtableRelation(
   ): DatasetIdentifier = {
     val projectId = parameters.getOrElse(
       BigtableSparkConf.BIGTABLE_PROJECT_ID,
-      "unknownProjectId"
+      "my-local-project"
     )
     val instanceId = parameters.getOrElse(
       BigtableSparkConf.BIGTABLE_INSTANCE_ID,
-      "unknownInstanceId"
+      "my-local-instance"
     )
     new DatasetIdentifier(tableId, s"bigtable://$projectId/$instanceId")
   }

@@ -56,8 +56,12 @@ object WordCount extends App {
     )
     .drop("frequency_double")
 
+  // "bigtable" is not working - throwing Data Source not found
+  // when full path like below is provided, it works!
+  val bigtableFormat = "com.google.cloud.spark.bigtable.BigtableDefaultSource"
+
   dfToWrite.write
-    .format("bigtable")
+    .format(bigtableFormat)
     .option("catalog", catalog)
     .option("spark.bigtable.project.id", projectId)
     .option("spark.bigtable.instance.id", instanceId)
@@ -66,7 +70,7 @@ object WordCount extends App {
   println("DataFrame was written to Bigtable.")
 
   val readDf = spark.read
-    .format("bigtable")
+    .format(bigtableFormat)
     .option("catalog", catalog)
     .option("spark.bigtable.project.id", projectId)
     .option("spark.bigtable.instance.id", instanceId)

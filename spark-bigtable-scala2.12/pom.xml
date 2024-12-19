@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>spark-bigtable-scala2.12</artifactId>
+  <version>0.2.1</version> <!-- ${NEXT_VERSION_FLAG} -->
 
   <properties>
     <scala.version>2.12.18</scala.version>

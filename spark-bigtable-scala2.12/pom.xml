@@ -79,6 +79,11 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>../spark-bigtable-core/src/main/resources</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -94,6 +99,7 @@
             <configuration>
               <sources>
                 <source>../spark-bigtable-core/src/main/scala</source>
+                <source>../spark-bigtable-core/src/main/resources</source>
                 <source>../spark-bigtable-core/src/test/java</source>
                 <!-- This directory only contains test server infrastructure used in unit/integration
                       tests, so we specify it as a source. -->

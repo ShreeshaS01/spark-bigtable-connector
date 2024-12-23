@@ -5,9 +5,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
-    <artifactId>spark-bigtable-connector</artifactId>
-    <version>0.2.1</version>
-    <relativePath>../pom.xml</relativePath>
+    <artifactId>spark-bigtable</artifactId>
+    <version>0.2.1</version> <!-- ${NEXT_VERSION_FLAG} -->
   </parent>
 
   <artifactId>spark-bigtable-scala2.13</artifactId>
@@ -79,11 +78,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>../spark-bigtable-core/src/main/resources</directory>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -98,19 +92,18 @@
             </goals>
             <configuration>
               <sources>
-                <source>../spark-bigtable-core/src/main/scala</source>
-                <source>../spark-bigtable-core/src/main/resources</source>
+                <source>../../spark-bigtable-core/src/main/scala</source>
                 <!-- This directory only contains test server infrastructure used in unit/integration
                       tests, so we specify it as a source. -->
-                <source>../spark-bigtable-core/src/test/java</source>
+                <source>../../spark-bigtable-core/src/test/java</source>
                 <!-- We need to put third-party code inside the `third_party` directory
                       for licensing compliance, including them in the project here. -->
-                <source>../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
+                <source>../../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
                 <!-- We need to put third-party code inside the `third_party` directory
                       for licensing compliance, including them in the project here.
                       This is included to get the SchemaConverters class(it has different syntax for scala 2.13)-->
                 <source>
-                  ../third_party/hbase-spark-connector/hbase-connectors-scala2.13/src/main/scala/
+                  ../../third_party/hbase-spark-connector/hbase-connectors-scala2.13/src/main/scala/
                 </source>
                 <!-- Included for reciprocal license compliance.-->
                 <source>${project.build.directory}/sources</source>

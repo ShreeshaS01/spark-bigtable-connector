@@ -49,9 +49,17 @@
       <scope>test</scope>
     </dependency>
 
+<!-- This should be uncommented to run integrate test on scala 2.12 and comment the scala 2.13 dependency
     <dependency>
       <groupId>com.google.cloud.spark.bigtable</groupId>
-      <artifactId>spark-bigtable_2.12</artifactId>
+      <artifactId>spark-bigtable-scala2.12</artifactId>
+      <version>0.2.1</version>  &lt;!&ndash; ${NEXT_VERSION_FLAG} &ndash;&gt;
+    </dependency>
+-->
+
+    <dependency>
+      <groupId>com.google.cloud.spark.bigtable</groupId>
+      <artifactId>spark-bigtable-scala2.13</artifactId>
       <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
     </dependency>
 

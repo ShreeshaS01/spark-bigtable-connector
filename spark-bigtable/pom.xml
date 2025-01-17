@@ -35,6 +35,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-bigtable</artifactId>
       <version>${bigtable.java.version}</version>
@@ -168,26 +173,6 @@
             </filter>
           </filters>
         </configuration>
-      </plugin>
-      <!-- Enable scalatest. -->
-      <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>2.2.0</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <filereports>WDF TestSuite.txt</filereports>
-          <runpath>../third_party/hbase-spark-connector/hbase-connectors/src/test</runpath>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

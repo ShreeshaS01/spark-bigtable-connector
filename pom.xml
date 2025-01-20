@@ -70,12 +70,8 @@
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
 
-    <scala.version>2.13.14</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
-<!-- this should be uncommented and above scala version should be commented to run integrate test on scala 2.12
-    <scala.version>2.12.18</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
--->
+    <connector.artifact.id>spark-bigtable-scala2.13</connector.artifact.id>
     <spark.version>3.5.1</spark.version>
     <bigtable.java.version>2.42.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>

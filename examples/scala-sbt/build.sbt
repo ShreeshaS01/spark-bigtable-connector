@@ -15,25 +15,28 @@
  */
 
 /** build settings for scala 2.12 */
-/*
+
 name := "spark-bigtable-example-scala2.12"
 version := "0.1"
-scalaVersion := "2.12.18"
+scalaVersion := "2.12.14"
 val sparkBigtable = "spark-bigtable-scala2.12"
-*/
+
 
 /** build settings for scala 2.13 */
+
+/*
 name := "spark-bigtable-example-scala2.13"
 version := "0.1"
 scalaVersion := "2.13.14"
 val sparkBigtable = "spark-bigtable-scala2.13"
+*/
 
-val sparkVersion = "3.5.1"
+val sparkVersion = "3.3.3"
 
 resolvers += Resolver.mavenLocal
 
 libraryDependencies ++= Seq(
-  "com.google.cloud.spark.bigtable" % sparkBigtable % "0.2.1",
+  "com.google.cloud.spark.bigtable" % sparkBigtable % "0.3.0",
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.slf4j" % "slf4j-reload4j" % "1.7.36",
 )

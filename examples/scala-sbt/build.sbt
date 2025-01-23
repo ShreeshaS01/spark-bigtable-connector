@@ -18,7 +18,7 @@
 
 name := "spark-bigtable-example-scala2.12"
 version := "0.1"
-scalaVersion := "2.12.14"
+scalaVersion := "2.12.18"
 val sparkBigtable = "spark-bigtable-scala2.12"
 
 
@@ -31,7 +31,7 @@ scalaVersion := "2.13.14"
 val sparkBigtable = "spark-bigtable-scala2.13"
 */
 
-val sparkVersion = "3.3.3"
+val sparkVersion = "3.5.1"
 
 resolvers += Resolver.mavenLocal
 

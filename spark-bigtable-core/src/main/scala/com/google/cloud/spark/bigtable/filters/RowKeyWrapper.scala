@@ -22,13 +22,9 @@ import com.google.protobuf.ByteString
 class RowKeyWrapper(private val key: ByteString)
     extends Comparable[RowKeyWrapper]
     with Serializable {
+
   def this(byteArrayKey: Array[Byte]) {
-    this(
-      if (byteArrayKey == null)
-        null
-      else
-        ByteString.copyFrom(byteArrayKey)
-    )
+    this(if (byteArrayKey == null) null else ByteString.copyFrom(byteArrayKey))
   }
 
   def getKey: ByteString = key

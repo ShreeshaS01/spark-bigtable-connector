@@ -40,7 +40,7 @@ object ReadRowConversions extends Serializable {
       keyFields: Seq[Field],
       catalog: BigtableTableCatalog
   ): Map[Field, Any] = {
-    val row: Array[Byte] = bigtableRow.getKey().toByteArray()
+    val row: Array[Byte] = bigtableRow.getKey.toByteArray
     keyFields
       .foldLeft((0, Seq[(Field, Any)]()))((state, field) => {
         val idx = state._1
@@ -128,10 +128,10 @@ object ReadRowConversions extends Serializable {
       .map { x =>
         val allCells: List[RowCell] =
           bigtableRow.getCells(x.btColFamily, x.btColName).asScala.toList
-        if (allCells.size == 0) {
+        if (allCells.isEmpty) {
           (x, null)
         } else {
-          val latestCellValue = allCells(0).getValue().toByteArray()
+          val latestCellValue = allCells.head.getValue.toByteArray
           if ((x.length != -1) && (x.length != latestCellValue.length)) {
             throw new IllegalArgumentException(
               "The byte array in Bigtable cell [" + latestCellValue.mkString(
@@ -154,6 +154,6 @@ object ReadRowConversions extends Serializable {
       }
       .toMap
     val unionedRow = keySeq ++ valueSeq
-    SparkRow.fromSeq(fields.map(unionedRow.get(_).getOrElse(null)))
+    SparkRow.fromSeq(fields.map(unionedRow.get(_).orNull))
   }
 }

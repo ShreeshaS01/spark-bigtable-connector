@@ -14,33 +14,30 @@
  * limitations under the License.
  */
 
-package com.google.cloud.spark.bigtable.datasources
+package com.google.cloud.spark.bigtable.join
 
 import com.google.api.gax.rpc.ServerStream
 import com.google.cloud.bigtable.data.v2.BigtableDataClient
 import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, TimestampFilter}
 import com.google.cloud.bigtable.data.v2.models.Range.ByteStringRange
 import com.google.cloud.bigtable.data.v2.models.{KeyOffset, Query, Row => BigtableRow}
+import com.google.cloud.spark.bigtable.datasources.{BigtableClientKey, BigtableDataClientBuilder}
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{BoundType, RangeSet, TreeRangeSet, Range => GuavaRange}
 import com.google.protobuf.ByteString
-import org.apache.spark.rdd.RDD
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.Partition
 import org.apache.yetus.audience.InterfaceAudience
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.asScalaBufferConverter
 
-@InterfaceAudience.Private
-class BigtableTableScanRDD(
+class BigtableTableScan(
     clientKey: BigtableClientKey,
     filterRangeSet: RangeSet[RowKeyWrapper],
     tableId: String,
-    sparkContext: SparkContext,
     startTimestampMicros: Option[Long],
     endTimestampMicros: Option[Long]
-) extends RDD[BigtableRow](sparkContext, Nil) {
-
-  override def getPartitions: Array[Partition] = {
+) extends Serializable {
+  def getPartitions: Array[Partition] = {
     try {
       val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
       val bigtableDataClient = clientHandle.getClient()
@@ -94,7 +91,7 @@ class BigtableTableScanRDD(
       partitions.asInstanceOf[Array[Partition]]
     } catch {
       case e: Exception => {
-        logError("Received error when creating partitions: " + e.getMessage)
+//        logError("Received error when creating partitions: " + e.getMessage)
         throw e
       }
     }
@@ -116,6 +113,7 @@ class BigtableTableScanRDD(
           true
         }
       }
+
       override def next(): BigtableRow = {
         it.next()
       }
@@ -123,10 +121,7 @@ class BigtableTableScanRDD(
     iterator
   }
 
-  override def compute(
-      split: Partition,
-      context: TaskContext
-  ): Iterator[BigtableRow] = {
+  def compute(split: Partition): Iterator[BigtableRow] = {
     try {
       val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
       val bigtableDataClient: BigtableDataClient = clientHandle.getClient()
@@ -143,9 +138,6 @@ class BigtableTableScanRDD(
       streamToIterator(stream, clientHandle)
     } catch {
       case e: Exception => {
-        logError(
-          "Received error when reading rows from Bigtable: " + e.getMessage
-        )
         throw e
       }
     }
@@ -181,9 +173,7 @@ class BigtableTableScanRDD(
       }
 
       // Handle end key, null is considered +inf
-      if (
-        guavaRange.hasUpperBound && guavaRange.upperEndpoint().getKey != null
-      ) {
+      if (guavaRange.hasUpperBound && guavaRange.upperEndpoint().getKey != null) {
         guavaRange.upperBoundType() match {
           case BoundType.CLOSED =>
             byteStringRange.endClosed(guavaRange.upperEndpoint().getKey)

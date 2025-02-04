@@ -36,14 +36,9 @@ object SparkSqlFilterAdapter {
       pushDownRowKeyFilters: Boolean
   ): RangeSet[RowKeyWrapper] = {
     if (pushDownRowKeyFilters) {
-      val rangeSetResult: RangeSet[RowKeyWrapper] =
-        TreeRangeSet.create[RowKeyWrapper]()
+      val rangeSetResult: RangeSet[RowKeyWrapper] = TreeRangeSet.create[RowKeyWrapper]()
       rangeSetResult.add(Range.all[RowKeyWrapper]())
-      filters.foreach(x =>
-        rangeSetResult.removeAll(
-          convertFilterToRangeSet(x, catalog).complement()
-        )
-      )
+      filters.foreach(x => rangeSetResult.removeAll(convertFilterToRangeSet(x, catalog).complement()))
       ImmutableRangeSet.copyOf(rangeSetResult)
     } else {
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]())

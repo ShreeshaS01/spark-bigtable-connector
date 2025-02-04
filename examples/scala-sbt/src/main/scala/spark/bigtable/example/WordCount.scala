@@ -17,8 +17,7 @@
 package spark.bigtable.example
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, udf}
 import java.nio.ByteBuffer
 
 object WordCount extends App {
@@ -42,9 +41,13 @@ object WordCount extends App {
        |}""".stripMargin
 
   import spark.implicits._
-  val data = (0 to 9).map(i => ("word%d".format(i), i, i / 1000.0))
+  val data = (1 to 9999999).map(i => ("word%d".format(i%3000000), i, i / 9999999.0))
   val rdd = spark.sparkContext.parallelize(data)
   val dfWithDouble = rdd.toDF("word", "count", "frequency_double")
+
+  val customData = (1 to 1000).map(i => ("word%d".format(i), i + 1, i + 1 / 1000.0))
+  val customRdd = spark.sparkContext.parallelize(customData)
+  val customDf = customRdd.toDF("word", "count", "frequency_double")
 
   println("Created the DataFrame:");
   dfWithDouble.show()
@@ -55,7 +58,7 @@ object WordCount extends App {
       doubleToBinaryUdf(dfWithDouble.col("frequency_double"))
     )
     .drop("frequency_double")
-
+  println(dfToWrite.rdd.getNumPartitions)
   dfToWrite.write
     .format("bigtable")
     .option("catalog", catalog)
@@ -80,6 +83,7 @@ object WordCount extends App {
     .drop("frequency_binary")
 
   println("Reading the DataFrame from Bigtable:");
+  println(readDfWithDouble.rdd.getNumPartitions)
   readDfWithDouble.show()
 
   def parse(args: Array[String]): (String, String, String, String) = {
@@ -115,5 +119,41 @@ object WordCount extends App {
     } else {
       ByteBuffer.wrap(binaryData).getDouble()
     }
+  }
+}
+
+object JoinTest {
+  /*
+  * customDf suppose to be a small df (kind of subset of a lookup table)
+  * bigtableDf is a very big table compared to the custom df
+  * default joining column is rowkey column
+  *
+  * 1. perform join with full table scan
+  * 2. perform join with partial table scan by filtering only required record
+  * 3. Note down the time
+  *
+  * */
+  def executeFullScanInnerJoin(customDf: DataFrame, bigtableDf: DataFrame, onColumn: String): Unit = {
+    val startTime = System.currentTimeMillis()
+    val resDf = customDf.join(bigtableDf, onColumn)
+    val count = resDf.count
+    val endTime = System.currentTimeMillis()
+    println(s"executeFullScanInnerJoin: ${(endTime - startTime) / 1000}\n count=$count")
+  }
+
+  def executePartialScanInnerJoin(customDf: DataFrame, bigtableDf: DataFrame, onColumn: String): Unit = {
+    val startTime = System.currentTimeMillis()
+
+    val dfArray: Array[DataFrame] = Array[DataFrame]()
+    customDf.select(onColumn).rdd.foreachPartition { iterator =>
+      val rowkeyValueList = iterator.map { row => row.get(0).toString }.toSeq
+      val bigtableDataset = bigtableDf.where(col(onColumn).isInCollection(rowkeyValueList))
+      dfArray.appended(bigtableDataset)
+    }
+    val requiredBigtableDf = dfArray.reduce(_ union _)
+    val resDf = customDf.join(requiredBigtableDf, onColumn)
+    val count = resDf.count
+    val endTime = System.currentTimeMillis()
+    println(s"executeFullScanInnerJoin: ${(endTime - startTime) / 1000}\n count=$count")
   }
 }

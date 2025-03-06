@@ -8,10 +8,8 @@ import java.time.Instant
 import java.util.Date
 
 class CustomAccessTokenProvider extends AccessTokenProvider {
-  // Initialize GoogleCredentials
   private val credentials: GoogleCredentials = GoogleCredentials.getApplicationDefault
 
-  // Fetch the initial token and expiry time
   private var currentToken: String = fetchInitialToken()
   private var tokenExpiry: Instant = fetchInitialTokenExpiry()
 
@@ -26,14 +24,9 @@ class CustomAccessTokenProvider extends AccessTokenProvider {
   @throws(classOf[IOException])
   override def refresh(): Unit = {
     println("Refreshing token...")
-    // Refresh the credentials to get a new access token
     credentials.refresh()
-    val newToken = credentials.getAccessToken.getTokenValue
-    val newExpiry = credentials.getAccessToken.getExpirationTime.toInstant
-
-    // Update the current token and expiry
-    currentToken = newToken
-    tokenExpiry = newExpiry
+    currentToken = credentials.getAccessToken.getTokenValue
+    tokenExpiry = credentials.getAccessToken.getExpirationTime.toInstant
   }
 
   @throws(classOf[IOException])
@@ -45,7 +38,6 @@ class CustomAccessTokenProvider extends AccessTokenProvider {
 
   @throws(classOf[IOException])
   private def fetchInitialToken(): String = {
-    // Ensure the credentials are refreshed before fetching the token
     credentials.refreshIfExpired()
     credentials.getAccessToken.getTokenValue
   }

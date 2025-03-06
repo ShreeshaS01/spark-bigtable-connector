@@ -20,6 +20,7 @@ import com.google.api.gax.batching.{BatchingSettings, FlowControlSettings}
 import com.google.api.gax.rpc.FixedHeaderProvider
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
+import com.google.cloud.spark.bigtable.BigtableUtil.createVerifiedInstance
 import com.google.cloud.spark.bigtable._
 import com.google.common.collect.ImmutableMap
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
@@ -115,6 +116,20 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
+
+    setCredentialsProvider(clientKey, settingsBuilder)
+  }
+
+  private def setCredentialsProvider(
+      clientKey: BigtableClientKey,
+      settingsBuilder: BigtableDataSettings.Builder
+  ): Unit = {
+    clientKey.customCredentialsProviderFQCN.map { accessTokenProviderFQCN =>
+      val accessTokenProvider =
+        createVerifiedInstance(accessTokenProviderFQCN, classOf[AccessTokenProvider])
+      val credentials = new AccessTokenProviderCredentials(accessTokenProvider)
+      settingsBuilder.setCredentialsProvider(new CustomCredentialsProvider(credentials))
+    }
   }
 
   private def configureHeaderProvider(
@@ -242,9 +257,23 @@ object BigtableAdminClientBuilder extends Serializable {
     }.setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
 
+    setCredentialsProvider(clientKey, settingsBuilder)
+
     addUserAgent(clientKey, settingsBuilder)
 
     BigtableTableAdminClient.create(settingsBuilder.build())
+  }
+
+  private def setCredentialsProvider(
+      clientKey: BigtableClientKey,
+      settingsBuilder: BigtableTableAdminSettings.Builder
+  ): Unit = {
+    clientKey.customCredentialsProviderFQCN.map { accessTokenProviderFQCN =>
+      val accessTokenProvider =
+        createVerifiedInstance(accessTokenProviderFQCN, classOf[AccessTokenProvider])
+      val credentials = new AccessTokenProviderCredentials(accessTokenProvider)
+      settingsBuilder.setCredentialsProvider(new CustomCredentialsProvider(credentials))
+    }
   }
 
   private def addUserAgent(
@@ -294,6 +323,8 @@ class BigtableClientKey(
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
   val batchSize: Long = bigtableSparkConf.batchMutateSize
+  val customCredentialsProviderFQCN: Option[String] =
+    bigtableSparkConf.customCredentialsProviderFQCN
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION

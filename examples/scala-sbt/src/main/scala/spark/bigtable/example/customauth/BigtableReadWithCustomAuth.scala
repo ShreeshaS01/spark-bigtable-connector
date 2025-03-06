@@ -10,11 +10,16 @@ object BigtableReadWithCustomAuth extends App {
 
   val (projectId, instanceId, tableName, _) = parse(args)
 
-  System.setProperty("hadoop.home.dir", "C:\\Hadoop")
-
   val spark = SparkSession.builder()
     .appName("BigtableReadWithCustomAuth")
     .master("local[*]")
+    .config("spark.executor.memory", "12g")
+    .config("spark.executor.cores", "16")
+    .config("spark.sql.shuffle.partitions", "200")
+    .config("spark.bigtable.grpc.retry.enabled", "true")
+    .config("spark.bigtable.grpc.retry.maxAttempts", "5")
+    .config("spark.bigtable.grpc.retry.initialBackoff.ms", "1000")
+    .config("spark.bigtable.grpc.retry.maxBackoff.ms", "10000")
     .getOrCreate()
 
   spark.conf.set("spark.sql.adaptive.enabled", "false")
@@ -42,17 +47,8 @@ object BigtableReadWithCustomAuth extends App {
        |}
        |}""".stripMargin
 
-  // Read data from Bigtable
-  val readDf = spark.read
-    .format("bigtable")
-    .option("catalog", catalog)
-    .option("spark.bigtable.project.id", projectId)
-    .option("spark.bigtable.instance.id", instanceId)
-    .option("spark.bigtable.custom.token.provider", tokenProvider.getClass.getName)
-    .load()
-
   Future {
-    Thread.sleep(80000) // Give main thread 80s
+    Thread.sleep(50000) // Give main thread 80s
     tokenProvider.refresh()
   }.map { _ =>
     val refreshedToken = tokenProvider.getCurrentToken
@@ -66,17 +62,31 @@ object BigtableReadWithCustomAuth extends App {
     }
   }
 
-  // Simulate delay to trigger token refresh
-  println("Reading data from Bigtable...")
-  val savePath = "C:\\Users\\cloudsufi\\Documents\\custom-auth\\spark-bigtable-connector\\examples\\scala-sbt\\data"
-  readDf
-    //    .show(10000)
-    .sample(0.0000005)
-    .coalesce(1)
-    .write
-    .format("csv")
-    .mode("overwrite")
-    .save(savePath)
+  try {
+    val readDf = spark.read
+      .format("bigtable")
+      .option("catalog", catalog)
+      .option("spark.bigtable.project.id", projectId)
+      .option("spark.bigtable.instance.id", instanceId)
+      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
+      .load()
 
-  spark.stop()
+    // mkdir a data folder before running this
+    println("Reading data from Bigtable...")
+    val savePath = "~/Documents/data"
+    readDf
+      .show(50)
+//      .sample(0.0000005)
+//      .repartition(10)
+//      .write
+//      .mode("overwrite")
+//      .format("parquet")
+//      .save(savePath)
+  } catch {
+    case e: Exception =>
+      println(s"Error reading/writing data: ${e.getMessage}")
+      e.printStackTrace()
+  } finally {
+    spark.stop()
+  }
 }

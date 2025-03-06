@@ -93,6 +93,8 @@ object BigtableSparkConf {
     "spark.bigtable.enable.batch_mutate.flow_control"
   val DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL = false
 
+  val BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER = "spark.bigtable.gcp.accesstoken.provider"
+
   /** Used for internal testing and not officially supported. */
   private[datasources] val MAX_READ_ROWS_RETRIES =
     "spark.bigtable.max.read.rows.retries"
@@ -125,6 +127,8 @@ class BigtableSparkConfBuilder extends Serializable {
     BigtableSparkConf.DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL
 
   private var maxReadRowsRetries: Option[String] = None
+
+  private var customAccessTokenProviderFQCN: Option[String] = None
 
   // This function is package-private to allow internal setup when using DataFrames
   // (since Spark SQL passes a Map<String, String> object). However, for external use with RDDs,
@@ -180,6 +184,9 @@ class BigtableSparkConfBuilder extends Serializable {
       .toBoolean
 
     this.maxReadRowsRetries = conf.get(BigtableSparkConf.MAX_READ_ROWS_RETRIES)
+
+    this.customAccessTokenProviderFQCN =
+      conf.get(BigtableSparkConf.BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER)
 
     this
   }
@@ -246,7 +253,8 @@ class BigtableSparkConfBuilder extends Serializable {
       mutateRowsTotalTimeoutMs,
       batchMutateSize,
       enableBatchMutateFlowControl,
-      maxReadRowsRetries
+      maxReadRowsRetries,
+      customAccessTokenProviderFQCN
     )
   }
 }
@@ -271,5 +279,6 @@ class BigtableSparkConf private[datasources] (
     val mutateRowsTotalTimeoutMs: Option[String],
     val batchMutateSize: Long,
     val enableBatchMutateFlowControl: Boolean,
-    val maxReadRowsRetries: Option[String]
+    val maxReadRowsRetries: Option[String],
+    val customCredentialsProviderFQCN: Option[String]
 ) extends Serializable

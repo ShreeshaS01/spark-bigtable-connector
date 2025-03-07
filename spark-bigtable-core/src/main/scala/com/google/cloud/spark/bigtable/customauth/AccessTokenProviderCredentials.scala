@@ -1,4 +1,4 @@
-package com.google.cloud.spark.bigtable
+package com.google.cloud.spark.bigtable.customauth
 
 import com.google.auth.oauth2.{AccessToken, GoogleCredentials}
 import com.google.common.annotations.VisibleForTesting

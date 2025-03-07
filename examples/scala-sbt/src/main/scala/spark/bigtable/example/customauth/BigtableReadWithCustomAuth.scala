@@ -45,7 +45,7 @@ object BigtableReadWithCustomAuth extends App with Logging {
       .option("catalog", catalog)
       .option("spark.bigtable.project.id", projectId)
       .option("spark.bigtable.instance.id", instanceId)
-//      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
+      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
       .load()
 
     logInfo("Reading data from Bigtable...")

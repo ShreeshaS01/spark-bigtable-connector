@@ -1,7 +1,7 @@
 package spark.bigtable.example.customauth
 
 import com.google.auth.oauth2.GoogleCredentials
-import com.google.cloud.spark.bigtable.{AccessToken, AccessTokenProvider}
+import com.google.cloud.spark.bigtable.customauth.{AccessToken, AccessTokenProvider}
 
 import java.io.IOException
 import java.time.Instant

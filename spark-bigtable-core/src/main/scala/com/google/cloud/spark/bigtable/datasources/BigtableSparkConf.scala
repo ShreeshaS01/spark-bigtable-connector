@@ -280,5 +280,5 @@ class BigtableSparkConf private[datasources] (
     val batchMutateSize: Long,
     val enableBatchMutateFlowControl: Boolean,
     val maxReadRowsRetries: Option[String],
-    val customCredentialsProviderFQCN: Option[String]
+    val customAccessTokenProviderFQCN: Option[String]
 ) extends Serializable

@@ -1,5 +1,12 @@
 package com.google.cloud.spark.bigtable
 
+import com.google.cloud.spark.bigtable.customauth.{
+  AccessTokenProvider,
+  AccessTokenProviderCredentials,
+  BigtableCredentialsProvider
+}
+import com.google.cloud.spark.bigtable.datasources.BigtableClientKey
+
 import java.lang.reflect.InvocationTargetException
 import java.util
 import java.util.Arrays
@@ -35,6 +42,18 @@ object BigtableUtil {
           s"Could not instantiate class [$fullyQualifiedClassName], implementing ${requiredClass.getCanonicalName}",
           e
         )
+    }
+  }
+
+  def getCredentialsProvider(
+      clientKey: BigtableClientKey
+  ): Option[BigtableCredentialsProvider] = {
+    clientKey.customAccessTokenProviderFQCN.map { accessTokenProviderFQCN =>
+      val accessTokenProviderInstance =
+        createVerifiedInstance(accessTokenProviderFQCN, classOf[AccessTokenProvider])
+      new BigtableCredentialsProvider(
+        new AccessTokenProviderCredentials(accessTokenProviderInstance)
+      )
     }
   }
 }

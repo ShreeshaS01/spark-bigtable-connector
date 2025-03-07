@@ -1,33 +1,23 @@
 package spark.bigtable.example.customauth
 
+import com.google.cloud.spark.bigtable.Logging
 import org.apache.spark.sql.SparkSession
 import spark.bigtable.example.WordCount.parse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object BigtableReadWithCustomAuth extends App {
+object BigtableReadWithCustomAuth extends App with Logging {
 
   val (projectId, instanceId, tableName, _) = parse(args)
 
   val spark = SparkSession.builder()
     .appName("BigtableReadWithCustomAuth")
     .master("local[*]")
-    .config("spark.executor.memory", "12g")
-    .config("spark.executor.cores", "16")
-    .config("spark.sql.shuffle.partitions", "200")
-    .config("spark.bigtable.grpc.retry.enabled", "true")
-    .config("spark.bigtable.grpc.retry.maxAttempts", "5")
-    .config("spark.bigtable.grpc.retry.initialBackoff.ms", "1000")
-    .config("spark.bigtable.grpc.retry.maxBackoff.ms", "10000")
     .getOrCreate()
 
-  spark.conf.set("spark.sql.adaptive.enabled", "false")
-
-  // Initialize custom AccessTokenProvider
   val tokenProvider = new CustomAccessTokenProvider()
   val initialToken = tokenProvider.getCurrentToken
-  println(s"initial token: $initialToken")
 
   // Bigtable catalog configuration
   val catalog: String =
@@ -47,20 +37,7 @@ object BigtableReadWithCustomAuth extends App {
        |}
        |}""".stripMargin
 
-  Future {
-    Thread.sleep(50000) // Give main thread 80s
-    tokenProvider.refresh()
-  }.map { _ =>
-    val refreshedToken = tokenProvider.getCurrentToken
-    println(s"Refreshed token: $refreshedToken")
-
-    // Verify that the token has changed
-    if (initialToken != refreshedToken) {
-      println("Token refresh test passed: The token has changed.")
-    } else {
-      println("Token refresh test failed: The token has not changed.")
-    }
-  }
+  tokenRefreshTest()
 
   try {
     val readDf = spark.read
@@ -68,25 +45,40 @@ object BigtableReadWithCustomAuth extends App {
       .option("catalog", catalog)
       .option("spark.bigtable.project.id", projectId)
       .option("spark.bigtable.instance.id", instanceId)
-      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
+//      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
       .load()
 
-    // mkdir a data folder before running this
-    println("Reading data from Bigtable...")
+    logInfo("Reading data from Bigtable...")
     val savePath = "~/Documents/data"
     readDf
       .show(50)
-//      .sample(0.0000005)
-//      .repartition(10)
-//      .write
-//      .mode("overwrite")
-//      .format("parquet")
-//      .save(savePath)
+    //      .sample(0.0000005)
+    //      .repartition(10)
+    //      .write
+    //      .mode("overwrite")
+    //      .format("parquet")
+    //      .save(savePath)
   } catch {
     case e: Exception =>
-      println(s"Error reading/writing data: ${e.getMessage}")
+      logInfo(s"Error reading/writing data: ${e.getMessage}")
       e.printStackTrace()
   } finally {
     spark.stop()
+  }
+
+  private def tokenRefreshTest() = {
+    Future {
+      Thread.sleep(20000) // Give main thread 20s
+      tokenProvider.refresh()
+    }.map { _ =>
+      val refreshedToken = tokenProvider.getCurrentToken
+
+      // Verify that the token has changed
+      if (initialToken != refreshedToken) {
+        logInfo("Token refresh test passed: The token has changed.")
+      } else {
+        logInfo("Token refresh test failed: The token has not changed.")
+      }
+    }
   }
 }

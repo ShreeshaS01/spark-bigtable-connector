@@ -23,7 +23,6 @@ class CustomAccessTokenProvider extends AccessTokenProvider {
 
   @throws(classOf[IOException])
   override def refresh(): Unit = {
-    println("Refreshing token...")
     credentials.refresh()
     currentToken = credentials.getAccessToken.getTokenValue
     tokenExpiry = credentials.getAccessToken.getExpirationTime.toInstant

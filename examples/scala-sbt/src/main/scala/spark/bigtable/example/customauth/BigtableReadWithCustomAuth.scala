@@ -1,17 +1,34 @@
+/*
+ * Copyright 2024 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package spark.bigtable.example.customauth
 
-import com.google.cloud.spark.bigtable.Logging
 import org.apache.spark.sql.SparkSession
+import spark.bigtable.example.Util
 import spark.bigtable.example.WordCount.parse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object BigtableReadWithCustomAuth extends App with Logging {
+object BigtableReadWithCustomAuth extends App {
 
-  val (projectId, instanceId, tableName, _) = parse(args)
+  val (projectId, instanceId, tableName, createNewTable) = parse(args)
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("BigtableReadWithCustomAuth")
     .master("local[*]")
     .getOrCreate()
@@ -19,66 +36,40 @@ object BigtableReadWithCustomAuth extends App with Logging {
   val tokenProvider = new CustomAccessTokenProvider()
   val initialToken = tokenProvider.getCurrentToken
 
-  // Bigtable catalog configuration
-  val catalog: String =
-    s"""{
-       |"table":{"namespace":"default", "name":"$tableName", "tableCoder":"PrimitiveType"},
-       |"rowkey":"order_id",
-       |"columns":{
-       |  "order_id":{"cf":"rowkey", "col":"order_id", "type":"string"},
-       |  "customer_id":{"cf":"order_info", "col":"customer_id", "type":"string"},
-       |  "product_id":{"cf":"order_info", "col":"product_id", "type":"string"},
-       |  "amount":{"cf":"order_info", "col":"amount", "type":"string"},
-       |  "order_date":{"cf":"order_info", "col":"order_date", "type":"string"},
-       |  "status":{"cf":"order_info", "col":"status", "type":"string"},
-       |  "metadata":{"cf":"order_info", "col":"metadata", "type":"string"},
-       |  "logs":{"cf":"order_info", "col":"logs", "type":"string"},
-       |  "comments":{"cf":"order_info", "col":"comments", "type":"string"}
-       |}
-       |}""".stripMargin
+  Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName)
 
   tokenRefreshTest()
 
   try {
     val readDf = spark.read
       .format("bigtable")
-      .option("catalog", catalog)
+      .option("catalog", Util.getCatalog(tableName))
       .option("spark.bigtable.project.id", projectId)
       .option("spark.bigtable.instance.id", instanceId)
       .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
       .load()
 
-    logInfo("Reading data from Bigtable...")
-    val savePath = "~/Documents/data"
-    readDf
-      .show(50)
-    //      .sample(0.0000005)
-    //      .repartition(10)
-    //      .write
-    //      .mode("overwrite")
-    //      .format("parquet")
-    //      .save(savePath)
+    println("Reading data from Bigtable...")
+    readDf.show(50)
   } catch {
     case e: Exception =>
-      logInfo(s"Error reading/writing data: ${e.getMessage}")
+      println(s"Error reading/writing data: ${e.getMessage}")
       e.printStackTrace()
   } finally {
     spark.stop()
   }
 
-  private def tokenRefreshTest() = {
+  private def tokenRefreshTest(): Unit = {
     Future {
       Thread.sleep(20000) // Give main thread 20s
       tokenProvider.refresh()
     }.map { _ =>
       val refreshedToken = tokenProvider.getCurrentToken
-
-      // Verify that the token has changed
       if (initialToken != refreshedToken) {
-        logInfo("Token refresh test passed: The token has changed.")
+        println("Token refresh test passed: The token has changed.")
       } else {
-        logInfo("Token refresh test failed: The token has not changed.")
+        println("Token refresh test failed: The token has not changed.")
       }
-    }
+    }.onComplete(_ => println("Token Refresh Test completed"))
   }
 }

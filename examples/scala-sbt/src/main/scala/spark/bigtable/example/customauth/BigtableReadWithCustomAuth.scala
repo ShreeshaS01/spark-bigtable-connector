@@ -30,7 +30,6 @@ object BigtableReadWithCustomAuth extends App {
   val spark = SparkSession
     .builder()
     .appName("BigtableReadWithCustomAuth")
-    .master("local[*]")
     .getOrCreate()
 
   val tokenProvider = new CustomAccessTokenProvider()

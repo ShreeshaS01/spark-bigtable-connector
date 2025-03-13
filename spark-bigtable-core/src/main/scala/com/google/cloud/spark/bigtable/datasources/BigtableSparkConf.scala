@@ -133,7 +133,10 @@ class BigtableSparkConfBuilder extends Serializable {
   // This function is package-private to allow internal setup when using DataFrames
   // (since Spark SQL passes a Map<String, String> object). However, for external use with RDDs,
   // users need to use the setter methods to set the configs.
-  private[bigtable] def fromMap(conf: Map[String, String]): BigtableSparkConfBuilder = {
+  private[bigtable] def fromMap(
+                                 conf: Map[String, String],
+                                 globalConfig: Map[String, String]
+                               ): BigtableSparkConfBuilder = {
     this.projectId = conf.get(BigtableSparkConf.BIGTABLE_PROJECT_ID)
     this.instanceId = conf.get(BigtableSparkConf.BIGTABLE_INSTANCE_ID)
     this.appProfileId = conf.getOrElse(
@@ -185,8 +188,9 @@ class BigtableSparkConfBuilder extends Serializable {
 
     this.maxReadRowsRetries = conf.get(BigtableSparkConf.MAX_READ_ROWS_RETRIES)
 
-    this.customAccessTokenProviderFQCN =
-      conf.get(BigtableSparkConf.BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER)
+    this.customAccessTokenProviderFQCN = conf
+      .get(BigtableSparkConf.BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER)
+      .orElse(globalConfig.get(BigtableSparkConf.BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER))
 
     this
   }

@@ -12,6 +12,4 @@ class AccessTokenProviderCredentials(private val accessTokenProvider: AccessToke
     accessTokenProvider.refresh()
     accessTokenProvider.getAccessToken()
   }
-
-  @VisibleForTesting def getAccessTokenProvider: AccessTokenProvider = accessTokenProvider
 }

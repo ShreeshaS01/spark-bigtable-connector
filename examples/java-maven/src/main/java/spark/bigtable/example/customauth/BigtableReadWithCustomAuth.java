@@ -37,7 +37,6 @@ public class BigtableReadWithCustomAuth {
     SparkSession spark =
         SparkSession.builder()
             .appName("BigtableReadWithCustomAuth")
-            .master("local[*]")
             .getOrCreate();
 
     CustomAccessTokenProvider tokenProvider = new CustomAccessTokenProvider();

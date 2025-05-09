@@ -308,6 +308,38 @@ class CatalogColumnMappingTest
     assert(!result.first().getAs[Map[String, String]]("someCol").contains("any2"))
   }
 
+  test("if no bt column matches the regex we should have an empty map") {
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"row-key",
+         |"columns":{
+         |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
+         |},
+         |"regexColumns":{
+         |"someCol":{"cf":"cf1", "col":"^a.*", "type":"string"}
+         |}
+         |}""".stripMargin
+
+    fakeCustomDataService.addRow(
+      "some-row",
+      "cf1",
+      "b",
+      "expected-value"
+    )
+
+    addSampleKeyResponse("some-row")
+
+    val result = spark
+      .read
+      .format("bigtable")
+      .options(createParametersMap(catalog))
+      .load()
+
+    assert(result.first().getAs[Map[String, String]]("someCol").isEmpty)
+  }
+
+
   test("catalog with duplicated column name will throw an error") {
     val catalog =
       s"""{
@@ -329,6 +361,49 @@ class CatalogColumnMappingTest
         .options(createParametersMap(catalog))
         .load()
     }
+  }
+
+  test("use re2 for regex matching - \\v doesn't match new line") {
+    // Bigtable's backend uses re2 for regex: https://github.com/google/re2
+    // To test we are using re2 we exercise some of the intentional differences
+    // from re2 syntax to other regex flavors listed at
+    // https://swtch.com/~rsc/regexp/regexp3.html#caveats as of May 9 2025
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"row-key",
+         |"columns":{
+         |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
+         |},
+         |"regexColumns":{
+         |"someCol":{"cf":"cf1", "col":"a\\va", "type":"string"}
+         |}
+         |}""".stripMargin
+
+    fakeCustomDataService.addRow(
+      "some-row",
+      "cf1",
+      s"a${0x000A.toChar}a", // Unicode for new line, should not match
+      "non-expected-value"
+    )
+
+    fakeCustomDataService.addRow(
+      "some-row",
+      "cf1",
+      s"a${0x000B.toChar}a", // Unicode for vertical tab, should match
+      "expected-value"
+    )
+
+    addSampleKeyResponse("some-row")
+
+    val result = spark
+      .read
+      .format("bigtable")
+      .options(createParametersMap(catalog))
+      .load()
+
+    assert(result.first().getAs[Map[String, String]]("someCol").keys.count(_ => true) == 1)
+    assert(result.first().getAs[Map[String, String]]("someCol").get(s"a${0x000B.toChar}a") == Some("expected-value"))
   }
 
   def createParametersMap(catalog: String): Map[String, String] = {

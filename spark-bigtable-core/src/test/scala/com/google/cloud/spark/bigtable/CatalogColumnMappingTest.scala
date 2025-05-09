@@ -4,6 +4,7 @@ import com.google.bigtable.v2.SampleRowKeysResponse
 import com.google.cloud.spark.bigtable.datasources.BytesConverter
 import com.google.cloud.spark.bigtable.fakeserver.{FakeCustomDataService, FakeServerBuilder}
 import com.google.protobuf.ByteString
+import org.apache.spark.SparkException
 import org.apache.spark.sql.{AnalysisException, SparkSession}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -404,6 +405,45 @@ class CatalogColumnMappingTest
 
     assert(result.first().getAs[Map[String, String]]("someCol").keys.count(_ => true) == 1)
     assert(result.first().getAs[Map[String, String]]("someCol").get(s"a${0x000B.toChar}a") == Some("expected-value"))
+  }
+
+  test("use re2 for regex matching - \\X is not supported") {
+    // Bigtable's backend uses re2 for regex: https://github.com/google/re2
+    // To test we are using re2 we exercise some of the intentional differences
+    // from re2 syntax to other regex flavors listed at
+    // https://swtch.com/~rsc/regexp/regexp3.html#caveats as of May 9 2025
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"row-key",
+         |"columns":{
+         |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
+         |},
+         |"regexColumns":{
+         |"someCol":{"cf":"cf1", "col":"\\X", "type":"string"}
+         |}
+         |}""".stripMargin
+
+
+    // Add some data just to have something to try to match
+    fakeCustomDataService.addRow(
+      "some-row",
+      "cf1",
+      "something",
+      "it doesn't matter"
+    )
+
+    addSampleKeyResponse("some-row")
+
+    // Validate the right exception when using RE2
+    assertThrows[SparkException] {
+      val result = spark
+        .read
+        .format("bigtable")
+        .options(createParametersMap(catalog))
+        .load()
+        .collect()
+    }
   }
 
   def createParametersMap(catalog: String): Map[String, String] = {
